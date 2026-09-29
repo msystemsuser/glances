@@ -412,6 +412,7 @@ class DockerExtension:
             'network_tx': None,
             'ports': '',
             'uptime': None,
+            'uptime_seconds': None,
         }
 
         # Container Image
@@ -448,8 +449,9 @@ class DockerExtension:
             stats['network_rx'] = stats['network']['rx'] // stats['network']['time_since_update']
             stats['network_tx'] = stats['network']['tx'] // stats['network']['time_since_update']
 
-        started_at = container.attrs['State']['StartedAt']
-        stats['uptime'] = pretty_date(parser.parse(started_at).astimezone(tz.tzlocal()).replace(tzinfo=None))
+        started_at = parser.parse(container.attrs['State']['StartedAt'])
+        stats['uptime'] = pretty_date(started_at.astimezone(tz.tzlocal()).replace(tzinfo=None))
+        stats['uptime_seconds'] = int(time.time() - started_at.timestamp())
 
         # Manage special chars in command (see issue#2733)
         stats['command'] = replace_special_chars(' '.join(stats['command']))

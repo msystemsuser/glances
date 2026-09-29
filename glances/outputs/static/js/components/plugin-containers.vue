@@ -14,7 +14,14 @@
                             @click="args.sort_processes_key = 'name'">
                             Name
                         </td>
-                        <td v-show="!getDisableStats().includes('status')" scope="col">Status</td>
+                        <td
+                            v-show="!getDisableStats().includes('status')"
+                            scope="col"
+                            :class="['sortable', sorter.column === 'status' && 'sort']"
+                            @click="args.sort_processes_key = 'status'"
+                        >
+                            Status
+                        </td>
                         <td v-show="!getDisableStats().includes('cpu')" scope="col"
                             :class="['sortable', sorter.column === 'cpu_percent' && 'sort']"
                             @click="args.sort_processes_key = 'cpu_percent'">
@@ -78,8 +85,22 @@
                             @click="args.sort_processes_key = 'name'">
                             Name
                         </td>
-                        <td v-show="!getDisableStats().includes('status')" scope="col">Status</td>
-                        <td v-show="!getDisableStats().includes('uptime')" scope="col">Uptime</td>
+                        <td
+                            v-show="!getDisableStats().includes('status')"
+                            scope="col"
+                            :class="['sortable', sorter.column === 'status' && 'sort']"
+                            @click="args.sort_processes_key = 'status'"
+                        >
+                            Status
+                        </td>
+                        <td
+                            v-show="!getDisableStats().includes('uptime')"
+                            scope="col"
+                            :class="['sortable', sorter.column === 'uptime' && 'sort']"
+                            @click="args.sort_processes_key = 'uptime'"
+                        >
+                            Uptime
+                        </td>
                         <td v-show="!getDisableStats().includes('cpu')" scope="col"
                             :class="['sortable', sorter.column === 'cpu_percent' && 'sort']"
                             @click="args.sort_processes_key = 'cpu_percent'">
@@ -252,6 +273,7 @@ export default {
 						name: containerData.name,
 						status: containerData.status,
 						uptime: containerData.uptime,
+						uptime_seconds: containerData.uptime_seconds,
 						cpu_percent: containerData.cpu.total,
 						memory_usage: memory_usage_no_cache,
 						limit: containerData.memory.limit,
@@ -269,8 +291,20 @@ export default {
 			return orderBy(
 				containers,
 				[sorter.column].map((col) => {
-					const sorter = (item) =>
-						item[col === "memory_percent" ? "memory_usage" : col] ?? -Infinity;
+					const sorter = (item) => {
+						if (col === "status") {
+							// Worst first, in the order getStatusClass colours them,
+							// uncoloured statuses (e.g. starting) just above ok
+							return ["ok", "info", "careful", "warning", "error"].indexOf(
+								this.getStatusClass(item.status),
+							);
+						}
+						const field = {
+							memory_percent: "memory_usage",
+							uptime: "uptime_seconds",
+						}[col];
+						return item[field || col] ?? -Infinity;
+					};
 					return sorter;
 				}, []),
 				[sorter.isReverseColumn(sorter.column) ? "desc" : "asc"],
@@ -295,6 +329,8 @@ export default {
 					"io_wx",
 					"network_rx",
 					"network_tx",
+					"status",
+					"uptime",
 				];
 				function isReverseColumn(column) {
 					return !["name"].includes(column);
@@ -310,6 +346,8 @@ export default {
 						io_wx: "disk write rate",
 						network_rx: "network receive rate",
 						network_tx: "network transmit rate",
+						status: "container status",
+						uptime: "uptime",
 						None: "None",
 					};
 					return labels[value] || value;

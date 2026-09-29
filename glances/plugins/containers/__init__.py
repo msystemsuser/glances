@@ -90,6 +90,10 @@ fields_description = {
     'uptime': {
         'description': 'Container uptime',
     },
+    'uptime_seconds': {
+        'description': 'Container uptime in seconds',
+        'unit': 'second',
+    },
     'engine': {
         'description': 'Container engine (Docker, Podman, and LXD are currently supported)',
     },
