@@ -9,6 +9,7 @@
 
 """Tests for the Docker container engine (issue #3559 performance fix)."""
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -100,6 +101,19 @@ def test_image_field_format_preserved():
     with patch.object(docker_engine, "DockerStatsFetcher", MagicMock()):
         _, stats = ext.update(all_tag=True)
     assert stats[0]["image"] == ("redis:7",)
+
+
+def test_running_container_exposes_uptime_seconds():
+    """The WebUI sorts by uptime, so the pretty uptime needs a number next to it (issue #3763)."""
+    container = FakeContainer("a", status="running")
+    started_at = datetime.now(timezone.utc) - timedelta(hours=2)
+    container.attrs["State"]["StartedAt"] = started_at.isoformat()
+    ext = make_extension([container])
+    fetcher = MagicMock()
+    fetcher.return_value.activity_stats = {"cpu": {"total": 0.0}, "memory": {}, "io": {}, "network": {}}
+    with patch.object(docker_engine, "DockerStatsFetcher", fetcher):
+        _, stats = ext.update(all_tag=True)
+    assert 7200 <= stats[0]["uptime_seconds"] <= 7205
 
 
 def test_image_cache_evicts_removed_containers():

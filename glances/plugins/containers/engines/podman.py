@@ -422,6 +422,7 @@ class PodmanExtension:
             "network_tx": None,
             "ports": "",
             "uptime": None,
+            "uptime_seconds": None,
         }
 
         stats_fetcher = self.container_stats_fetchers[container.id]
@@ -447,6 +448,7 @@ class PodmanExtension:
 
         started_at = datetime.fromtimestamp(container.attrs["StartedAt"])
         stats["uptime"] = pretty_date(started_at)
+        stats["uptime_seconds"] = int(time.time() - container.attrs["StartedAt"])
 
         # Manage special chars in command (see issue#2733)
         stats["command"] = replace_special_chars(" ".join(stats["command"]))
